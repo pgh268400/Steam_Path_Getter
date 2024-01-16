@@ -25,37 +25,11 @@ class SteamPath:
         # libraryfolders.vdf를 파싱해서 설치된 스팀 게임들의 app 번호를 리스트로 반환한다
         self.__library_data = self.parse_library_vdf(self.__library_path)
         
-        # # 스팀 설치 경로 + appcache 안에 appinfo.vdf를 파싱한다
+        # 스팀 설치 경로 + appcache 안에 appinfo.vdf를 파싱한다
         self.__app_info_dic = self.parse_appinfo_vdf(self.__appinfo_path,  self.__library_data)
 
         # library 데이터와 appinfo 데이터를 합쳐서 게임 디렉토리 경로를 만든다
         self.__game_dir_data = self.get_game_dirs(self.__app_info_dic, self.__library_data)
-
-    # 프로퍼티로 데이터 반환
-    @property
-    def install_path(self) -> str:
-        return self.__install_path
-    
-    @property
-    def library_path(self) -> str:
-        return self.__library_path
-    
-    @property
-    def appinfo_path(self) -> str:
-        return self.__appinfo_path
-    
-    @property
-    def library_data(self) -> list:
-        return self.__library_data
-    
-    @property
-    def app_info_dic(self) -> dict:
-        return self.__app_info_dic
-    
-    @property
-    def game_dir_data(self) -> list:
-        return self.__game_dir_data
-    
 
     # 스팀 설치 경로를 자동으로 읽어오는 함수
     def __get_steam_path(self) -> str:
@@ -156,9 +130,6 @@ class SteamPath:
             for app_id in element['apps']:
                 app_id_match[app_id] = element['base_path']
 
-        # pprint(app_id_match)
-        # pprint(app_info_dic)
-
         for element in app_info_dic['datasets']:
             appinfo = element['data']['appinfo']
             app_id = str(appinfo['appid'])
@@ -201,7 +172,30 @@ class SteamPath:
 
         return result
 
-
+    # 프로퍼티로 데이터 반환
+    @property
+    def install_path(self) -> str:
+        return self.__install_path
+    
+    @property
+    def library_path(self) -> str:
+        return self.__library_path
+    
+    @property
+    def appinfo_path(self) -> str:
+        return self.__appinfo_path
+    
+    @property
+    def library_data(self) -> list:
+        return self.__library_data
+    
+    @property
+    def app_info_dic(self) -> dict:
+        return self.__app_info_dic
+    
+    @property
+    def game_dir_data(self) -> list:
+        return self.__game_dir_data
 
 
 
