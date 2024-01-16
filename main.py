@@ -1,8 +1,10 @@
+import json
 from pprint import pprint
+import subprocess
 import sys
+from typing import Any
 import winreg
 import os
-import vdf
 
 # 전역적으로 사용할 상수들
 steam_apps = "steamapps" # 스팀 설치 경로의 steamapps 폴더 이름
@@ -39,59 +41,42 @@ def steam_install_path_read() -> str:
     except Exception as e:
         raise e
 
-# libraryfolders.vdf 파일을 경로로 받아서 파싱하는 함수
-def parse_library_vdf(vdf_file_path : str) -> list[str]:
-    dic : dict = vdf.load(open(vdf_file_path, encoding="utf-8"))
-    inner : dict = dic['libraryfolders']
 
-    acf_path_lst : list[str] = []
+# 프로세스 실행하고 결과를 반환하는 함수
+def run_process(command: list[str]) -> str:
+    # command ex) ['ls', '-al']
 
-    for key, value in inner.items():
-        base_path : str = value['path']
-        apps : list[str] = list(value['apps'])
+    # 명령어 실행 후, 결과를 output에 저장
+    # text = True : output을 text로 저장,
+    # encoding은 기본이 cp949라 문제 없이 저장할려면 utf-8로 설정
+    try:
+        output: str = subprocess.check_output(
+            command, stderr=subprocess.STDOUT, encoding="utf-8", text=True
+        )
+    except Exception as e:
+        raise Exception("명령어 실행에 실패했습니다", command)
 
-        for app in apps:
-            app_path : str = os.path.join(base_path, steam_apps, app_manifest.format(app))
-            acf_path_lst.append(app_path)
-    return acf_path_lst
+    return output
 
-# acf 파일 목록을 받아서 파싱하는 함수
-def parse_acf(acf_file_path_lst : list[str]) -> list[dict]:
-    acf_lst : list[dict] = []
+# appinfo.vdf 파일을 딕셔너리로 파싱하는 함수
+def read_appinfo_vdf(appinfo_path : str) -> dict[Any, Any]:
+    result = run_process(["VDFparse.exe", appinfo_path])
+    # result를 json 형식으로 변환
+    json_dict : dict = json.loads(result)
+    return json_dict
 
-    for acf_file_path in acf_file_path_lst:
-        # acf_file_path 파일이 없다면 그냥 넘어간다
-        # (libraryfolders.vdf 파일은 스팀을 재시작해야 반영되기 때문에 게임을 삭제한 직후라면 acf 파일이 없을 수 있다.)
-        if not os.path.isfile(acf_file_path):
-            continue
-            
-        # 확장자는 acf 로 끝나지만 vdf 와 구조가 똑같기 때문에 vdf 라이브러리로 파싱 가능하다.
-        dic : dict = vdf.load(open(acf_file_path, encoding="utf-8"))
-        acf_lst.append(dic['AppState'])
-
-    pprint(acf_lst)
-    return acf_lst
-
-    
 # 예제 사용
 install_path = steam_install_path_read()
 
 print(f"스팀 설치 경로 : {install_path}")
 
 # 스팀 설치 경로 + appcache 안에 appinfo.vdf를 파싱한다
+appinfo_path = os.path.join(install_path, "appcache", "appinfo.vdf")
+result = read_appinfo_vdf(appinfo_path)
 
+# for element in result["datasets"]:
+#     pprint(element)
 
-# 스팀 설치 경로의 steamapps 폴더 안에 있는 libraryfolders.vdf 파일을 파싱한다.
-# libraryfolders.vdf 파일은 각 드라이브에 설치된 스팀 게임들의 경로를 가진 acf 파일의 이름과 경로를 가지고 있다.
-
-# ex) C:\Program Files (x86)\Steam\steamapps\libraryfolders.vdf
-library_file_path = os.path.join(install_path, steam_apps, library_folders)
-
-# libraryfolders.vdf 파일을 파싱한다.
-acf_path_lst : list[str] = parse_library_vdf(library_file_path)
-
-print("acf 파일 목록 :")
-pprint(acf_path_lst)
-
-# acf 파일 목록을 파싱해서 각 acf 파일의 정보를 가진 리스트를 만든다.
-acf_lst : list[dict] = parse_acf(acf_path_lst)
+# data json 파일로 저장
+with open("appinfo.json", "w", encoding="utf-8") as f:
+    json.dump(result, f, indent=4)
