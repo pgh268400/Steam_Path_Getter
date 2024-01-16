@@ -110,12 +110,6 @@ def parse_acf(app_id_lst : list[str]) -> list[dict]:
 def get_game_dirs(app_info_dic, library_data : list):
     result = []
 
-    # app_info_dic 과 library_data 를 각각 json 으로 저장
-    # with open("appinfo.json", "w", encoding="utf-8") as f:
-    #     json.dump(app_info_dic, f, indent=4)
-    # with open("library.json", "w", encoding="utf-8") as f:
-    #     json.dump(library_data, f, indent=4)
-
     # 각 app_id 에 대해 경로를 매칭시키는 데이터를 생성
     app_id_match = {}
     for i, element in enumerate(library_data):
@@ -133,11 +127,27 @@ def get_game_dirs(app_info_dic, library_data : list):
         config = appinfo['config']
         executable = ""
         
-        for key, value in config['launch'].items():
-            executable = value['executable']
-            break
-
         installdir = config['installdir']
+
+        for key, value in config['launch'].items():
+            # 실행 경로의 경우 리눅스, 윈도우, 맥에 따라 다르나
+            # 해당 코드는 윈도우에서만 동작하기 때문에 윈도우 경로만 추출한다.
+
+            # 'config' 키가 존재하고, 'oslist' 키도 존재하면 해당 값을 가져오고, 그렇지 않으면 None을 반환
+            oslist = value.get('config', {}).get('oslist', None)
+            executable : str = value['executable']
+
+            if executable == "":
+                continue
+
+            if oslist == "windows" or "exe" in executable or "bat" in executable or "cmd" in executable:
+                full_path = os.path.join(base_path, steam_apps, common, installdir, executable)
+
+                # 실행 파일이 존재해야만 경로를 저장한다.
+                if os.path.isfile(full_path):
+                    break
+
+        
         full_path = os.path.join(base_path, steam_apps, common, installdir, executable)
 
         # result에 모든 데이터를 담는다
@@ -170,7 +180,5 @@ app_info_dic = parse_appinfo_vdf(appinfo_path, library_data)
 result = get_game_dirs(app_info_dic, library_data)
 pprint(result)
 
-
-# data json 파일로 저장
-# with open("appinfo.json", "w", encoding="utf-8") as f:
-#     json.dump(app_info_dic, f, indent=4)
+for element in result:
+    print(element['full_path'])
