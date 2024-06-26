@@ -80,6 +80,7 @@ class SteamPath:
     # libraryfolders.vdf 파일을 경로로 받아서 파싱하는 함수
     def parse_library_vdf(self, vdf_file_path : str):
         dic : dict = vdf.load(open(vdf_file_path, encoding="utf-8"))
+
         inner : dict = dic['libraryfolders']
 
         result : list[dict] = []
